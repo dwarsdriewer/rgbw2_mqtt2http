@@ -51,11 +51,13 @@ apt-get update -y
 apt-get install -y python3-venv
 
 if [ ! -d "$APP_DIR/venv" ]; then
-    sudo -u "$APP_NAME" "$PYTHON_BIN" -m venv "$APP_DIR/venv"
-    
-    # Set ownership and permissions of the venv directory
-    sudo chown -R "$APP_NAME:$APP_NAME" "$APP_DIR/venv"
+    # First create the venv directory with sudo
+    sudo mkdir -p "$APP_DIR/venv"
+    sudo chown "$APP_NAME:$APP_NAME" "$APP_DIR/venv"
     sudo chmod 750 "$APP_DIR/venv"
+    
+    # Then create the virtual environment as the service user
+    sudo -u "$APP_NAME" "$PYTHON_BIN" -m venv "$APP_DIR/venv"
     
     # Install required Python packages
     if [ -f "$APP_DIR/requirements.txt" ]; then
