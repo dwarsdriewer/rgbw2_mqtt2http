@@ -42,10 +42,6 @@ else
     sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$APP_NAME"
 fi
 
-# Set ownership of the venv directory to the service user
-sudo chown -R "$APP_NAME:$APP_NAME" "$APP_DIR/venv"
-sudo chmod 750 "$APP_DIR/venv"
-
 # Create config directory if it doesn't exist
 sudo mkdir -p "$ENV_DIR"
 sudo chown root:$APP_NAME "$ENV_DIR"
@@ -56,6 +52,10 @@ apt-get install -y python3-venv
 
 if [ ! -d "$APP_DIR/venv" ]; then
     sudo -u "$APP_NAME" "$PYTHON_BIN" -m venv "$APP_DIR/venv"
+    
+    # Set ownership and permissions of the venv directory
+    sudo chown -R "$APP_NAME:$APP_NAME" "$APP_DIR/venv"
+    sudo chmod 750 "$APP_DIR/venv"
     
     # Install required Python packages
     if [ -f "$APP_DIR/requirements.txt" ]; then
