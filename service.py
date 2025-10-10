@@ -73,11 +73,11 @@ def on_message(client, userdata, message):
     elif topic == "garden/oaklight/set":
         try:
             brightness = int(payload)
-            if 0 <= brightness <= 100:
+            if 0 <= brightness <= 255:
                 logging.info(f"Set oak light brightness to {brightness}")
                 rgbw2_set_brightness(OAKLIGHT, brightness)
             else:
-                logging.info(f"Brightness value {brightness} out of range (0-100)")
+                logging.info(f"Brightness value {brightness} out of range (0-255)")
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
     elif topic == "carport/numbersign/command":
@@ -94,7 +94,7 @@ def on_message(client, userdata, message):
                 logging.info(f"Set number sign brightness to {brightness}")
                 rgbw2_set_brightness(NUMBERSIGN, brightness)
             else:
-                logging.info(f"Brightness value {brightness} out of range (0-100)")
+                logging.info(f"Brightness value {brightness} out of range (0-255)")
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
     else:   
