@@ -116,9 +116,7 @@ def main():
 
 def rgbw2_send_command(url: str, command: str):
     logging.info(f"Sending command '{command}' to rgbw2")
-    password = os.environ.get("SHELLY_PASSWORD")
-    print("password:", password)
-    basic = HTTPBasicAuth('admin', password)
+    basic = HTTPBasicAuth('admin', shelly_password)
     try:
         response = requests.get(f"{url}/color/0?turn={command}", auth=basic)
         logging.info(f"Response: {response.status_code} - {response.text}")
@@ -127,13 +125,35 @@ def rgbw2_send_command(url: str, command: str):
     
 def rgbw2_set_brightness(url: str, brightness: int):
     logging.info(f"Setting brightness to '{brightness}' on rgbw2")
-    password = os.environ.get("SHELLY_PASSWORD")
-    basic = HTTPBasicAuth('admin', password)
+    basic = HTTPBasicAuth('admin', shelly_password)
     try:
         response = requests.get(f"{url}/color/0?white={brightness}", auth=basic)
         logging.info(f"Response: {response.status_code} - {response.text}")
     except Exception as err:
         logging.error(f"Failed to set brightness: {err}")
 
+def read_shelly_password() -> str:
+    password = None
+    password_file = os.path.expanduser("~/.config/rgbw2_mqtt2http/shelly_password.txt")
+    try:
+        with open(password_file, 'r') as f:
+            password = f.read().strip()
+        if not password:
+            logging.error(f"Error: Password-File is empty.", file=sys.stderr)
+            sys.exit(1)
+        return password
+    except FileNotFoundError:
+        logging.error(f"Error: password file not found '{password_file}'", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print(f"Error: No read permission for password file '{password_file}'", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"An unexpected error has occured: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+shelly_password = read_shelly_password()
+        
 if __name__ == "__main__":
     sys.exit(main())
