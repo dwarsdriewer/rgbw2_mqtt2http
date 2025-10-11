@@ -75,7 +75,7 @@ def on_message(client, userdata, message):
             brightness = float(payload)
             if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set oak light brightness to {brightness}")
-                rgbw2_set_brightness(OAKLIGHT, int(brightness*255))
+                rgbw2_set_brightness(OAKLIGHT, int(brightness/100.0*255.0))
             else:
                 logging.info(f"Brightness value {brightness} out of range (0-100)")
         except ValueError:
@@ -92,7 +92,7 @@ def on_message(client, userdata, message):
             brightness = float(payload)
             if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set number sign brightness to {brightness}")
-                rgbw2_set_brightness(NUMBERSIGN, int(brightness*255))
+                rgbw2_set_brightness(NUMBERSIGN, int(brightness/100.0*255.0))
             else:
                 logging.info(f"Brightness value {brightness} out of range (0-100)")
         except ValueError:
