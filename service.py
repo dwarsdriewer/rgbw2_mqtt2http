@@ -72,12 +72,12 @@ def on_message(client, userdata, message):
             rgbw2_send_command(OAKLIGHT, "off")
     elif topic == "garden/oaklight/set":
         try:
-            brightness = int(payload)
-            if 0 <= brightness <= 255:
+            brightness = float(payload)
+            if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set oak light brightness to {brightness}")
-                rgbw2_set_brightness(OAKLIGHT, brightness)
+                rgbw2_set_brightness(OAKLIGHT, int(brightness*255))
             else:
-                logging.info(f"Brightness value {brightness} out of range (0-255)")
+                logging.info(f"Brightness value {brightness} out of range (0-100)")
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
     elif topic == "carport/numbersign/command":
@@ -89,12 +89,12 @@ def on_message(client, userdata, message):
             rgbw2_send_command(NUMBERSIGN, "off")
     elif topic == "carport/numbersign/set":
         try:
-            brightness = int(payload)
-            if 0 <= brightness <= 255:
+            brightness = float(payload)
+            if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set number sign brightness to {brightness}")
-                rgbw2_set_brightness(NUMBERSIGN, brightness)
+                rgbw2_set_brightness(NUMBERSIGN, int(brightness*255))
             else:
-                logging.info(f"Brightness value {brightness} out of range (0-255)")
+                logging.info(f"Brightness value {brightness} out of range (0-100)")
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
     else:   
