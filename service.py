@@ -4,6 +4,7 @@ import time
 import logging
 import requests
 from requests.auth import HTTPBasicAuth
+from requests.models import Response
 
 from paho.mqtt import client as mqtt_client
 from random import randint
@@ -17,6 +18,31 @@ MAX_RECONNECT_DELAY = 60
 OAKLIGHT = "http://192.168.2.48"
 NUMBERSIGN = "http://192.168.2.64"
 
+
+def rgbw2_send_status(client: mqtt_client.Client, url: str, status: str):
+    client.publish("garden/oaklight/status" if url == OAKLIGHT else "carport/numbersign/status", status, qos=1)
+
+def rgbw2_send_command(url: str, command: str) -> Response:
+    logging.info(f"Sending command '{command}' to rgbw2")
+    basic = HTTPBasicAuth('admin', shelly_password)
+    try:
+        response = requests.get(f"{url}/color/0?turn={command}", auth=basic)
+        logging.info(f"Response: {response.status_code} - {response.text}")
+        return response
+    except Exception as err:
+        logging.error(f"Failed to send command '{command}': {err}")
+    return None
+    
+def rgbw2_set_brightness(url: str, brightness: int):
+    logging.info(f"Setting brightness to '{brightness}' on rgbw2")
+    basic = HTTPBasicAuth('admin', shelly_password)
+    try:
+        response = requests.get(f"{url}/color/0?white={brightness}", auth=basic)
+        logging.info(f"Response: {response.status_code} - {response.text}")
+        return response
+    except Exception as err:
+        logging.error(f"Failed to set brightness: {err}")
+    return None
 
 def connect(broker_host: str, broker_port: int) -> mqtt_client.Client:
     client_id = f"mqtt-event-bus-{randint(0, 1000)}"
@@ -66,37 +92,45 @@ def on_message(client, userdata, message):
     if topic == "garden/oaklight/command":
         if payload == "ON" or payload == "on":
             logging.info("Oak light on")
-            rgbw2_send_command(OAKLIGHT, "on")
+            response = rgbw2_send_command(OAKLIGHT, "on")
         elif payload == "OFF" or payload == "off":
             logging.info("Oak light off")
-            rgbw2_send_command(OAKLIGHT, "off")
+            response = rgbw2_send_command(OAKLIGHT, "off")
+        rgbw2_send_status(client, OAKLIGHT, response.text if response else '{"error": "Failed to send command"}')
     elif topic == "garden/oaklight/set":
         try:
             brightness = float(payload)
             if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set oak light brightness to {brightness}")
-                rgbw2_set_brightness(OAKLIGHT, int(brightness/100.0*255.0))
+                response = rgbw2_set_brightness(OAKLIGHT, int(brightness/100.0*255.0))
+                rgbw2_send_status(client, OAKLIGHT, response.text if response else '{"error": "Failed to set brightness"}')
             else:
                 logging.info(f"Brightness value {brightness} out of range (0-100)")
+                rgbw2_send_status(client, OAKLIGHT, f'"error": "Brightness value {brightness} out of range (0-100)"')
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
+            rgbw2_send_status(client, OAKLIGHT, f'{"error": "Invalid brightness value: {payload}"}')
     elif topic == "carport/numbersign/command":
         if payload == "ON" or payload == "on":
             logging.info("Number sign on")
-            rgbw2_send_command(NUMBERSIGN, "on")
+            response = rgbw2_send_command(NUMBERSIGN, "on")
         elif payload == "OFF" or payload == "off":
             logging.info("Number sign off")
-            rgbw2_send_command(NUMBERSIGN, "off")
+            response = rgbw2_send_command(NUMBERSIGN, "off")
+        rgbw2_send_status(client, OAKLIGHT, response.text if response else '{"error": "Failed to send command"}')
     elif topic == "carport/numbersign/set":
         try:
             brightness = float(payload)
             if 0.0 <= brightness <= 100.0:
                 logging.info(f"Set number sign brightness to {brightness}")
-                rgbw2_set_brightness(NUMBERSIGN, int(brightness/100.0*255.0))
+                response = rgbw2_set_brightness(NUMBERSIGN, int(brightness/100.0*255.0))
+                rgbw2_send_status(client, NUMBERSIGN, response.text) if response else '{"error": "Failed to set brightness"}'
             else:
                 logging.info(f"Brightness value {brightness} out of range (0-100)")
+                rgbw2_send_status(client, NUMBERSIGN, f'"error": "Brightness value {brightness} out of range (0-100)"')
         except ValueError:
             logging.info(f"Invalid brightness value: {payload}")
+            rgbw2_send_status(client, NUMBERSIGN, f'{"error": "Invalid brightness value: {payload}"}')
     else:   
         logging.info(f"Unknown topic {topic} with payload {payload}")
 
@@ -113,24 +147,6 @@ def main():
         return 0
     except ValueError as ve:
         return str(ve)
-
-def rgbw2_send_command(url: str, command: str):
-    logging.info(f"Sending command '{command}' to rgbw2")
-    basic = HTTPBasicAuth('admin', shelly_password)
-    try:
-        response = requests.get(f"{url}/color/0?turn={command}", auth=basic)
-        logging.info(f"Response: {response.status_code} - {response.text}")
-    except Exception as err:
-        logging.error(f"Failed to send command '{command}': {err}")
-    
-def rgbw2_set_brightness(url: str, brightness: int):
-    logging.info(f"Setting brightness to '{brightness}' on rgbw2")
-    basic = HTTPBasicAuth('admin', shelly_password)
-    try:
-        response = requests.get(f"{url}/color/0?white={brightness}", auth=basic)
-        logging.info(f"Response: {response.status_code} - {response.text}")
-    except Exception as err:
-        logging.error(f"Failed to set brightness: {err}")
 
 def read_shelly_password() -> str:
     password = None
